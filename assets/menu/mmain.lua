@@ -38,8 +38,13 @@ function menu:destroy()
 end
 
 function menu:update(dt)
-  self.entries[self.selectedEntry]:setButtonState(NeoLua.BUTTON_HOVER_STATE)
-   
+
+  if not NeoLua.input:isKeyPressed("MOUSE_BUTTON_LEFT") then
+    self.entries[self.selectedEntry]:setButtonState(NeoLua.BUTTON_HOVER_STATE)
+  elseif not self.entries[self.selectedEntry]:isMouseOver() then
+    self.entries[self.selectedEntry]:setButtonState(NeoLua.BUTTON_NORMAL_STATE)
+  end
+  
   if NeoLua.input:onKeyDown("ENTER") or NeoLua.input:onKeyDown("SPACE") or NeoLua.input:onKeyDown("JOY1_BUTTON_START") then
     self.entries[self.selectedEntry]:doCallback()
   end

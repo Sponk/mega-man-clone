@@ -4,7 +4,6 @@ menu.selectedEntry = 1
 local neo2d = NeoLua.Neo2DEngine.getInstance()
 
 function menu:init(menusystem)
-  -- menu.canvasId = neo2d:getNumCanvase()
   menu.menusystem = menusystem
   menu.oldState = menusystem.state
   
@@ -26,8 +25,12 @@ function menu:init(menusystem)
 end
 
 function menu:update(dt) 
+  if not NeoLua.input:isKeyPressed("MOUSE_BUTTON_LEFT") then
     self.entries[self.selectedEntry]:setButtonState(NeoLua.BUTTON_HOVER_STATE)
-   
+  elseif not self.entries[self.selectedEntry]:isMouseOver() then
+    self.entries[self.selectedEntry]:setButtonState(NeoLua.BUTTON_NORMAL_STATE)
+  end
+     
   if NeoLua.input:onKeyDown("ENTER") or NeoLua.input:onKeyDown("SPACE") or NeoLua.input:onKeyDown("JOY1_BUTTON_START") then
     self.entries[self.selectedEntry]:doCallback()
   end
