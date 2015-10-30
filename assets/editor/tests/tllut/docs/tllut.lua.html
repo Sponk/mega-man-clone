@@ -1,0 +1,54 @@
+<head>
+<title> Reference | tllut.lua</title>
+</head>
+<html>
+<script src="lunr.js"></script>
+<script src="searchprovider.js"></script>
+<script src="searchindex.js"></script>
+<script src="highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<body onload='processOnLoadSearch();'>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="stylesheet" type="text/css" href="syntax-style.css"/>
+<div class='function' id='searchresults'></div>
+<div class='sidepanel'>
+<form>
+<input type="text" name="searchedit" placeholder="Search...">
+<input type="button" name="" value="Search" onclick="submitSearch(this.form.searchedit.value); return false;">
+</form>
+<a class='filelink' href='tllut.lua.html'>tllut.lua</a><br>
+</div>
+<div id='content'>
+<div class='function'><h2>function tllut:addSuite(s)</h2><p>
+Adds a suite to the current testing setup<br>
+<br>
+The table should be structured like<br>
+ <pre class='code'><code><br>
+ function functionA() end<br>
+ function functionB() end<br>
+<br>
+ local suite = { ["functionA"] = functionA, ["functionB"] = functionB }<br>
+</code></pre><br>
+</p><p><h3>Parameter</h3><p><strong>s</strong>
+<div class='indented'>A table containing all functions to test</div></p>
+</p></div><div class='function'><h2>function tllut:runAll()</h2><p>
+Runs all suites registered with the current testing setup<br>
+</p></div><div class='function'><h2>function tllut:printResult()</h2><p>
+Prints the result of the current testing setup.<br>
+</p></div><div class='function'><h2>function assertEquals(expected, actual, failmsg)</h2><p>
+Checks if the arguments are equal<br>
+</p><p><h3>Parameter</h3><p><strong>expected</strong>
+<div class='indented'>The expected value</div></p>
+<p><strong>actual</strong>
+<div class='indented'>The actual value that was found</div></p>
+<p><strong>failmsg</strong>
+<div class='indented'>An optional message that gets printed at failure</div></p>
+</p></div><div class='function'><h2>function assertArrayEquals(expected, actual, failmsg)</h2><p>
+Checks if the argument tables are equal<br>
+</p><p><h3>Parameter</h3><p><strong>expected</strong>
+<div class='indented'>The expected value</div></p>
+<p><strong>actual</strong>
+<div class='indented'>The actual value that was found</div></p>
+<p><strong>failmsg</strong>
+<div class='indented'>An optional message that gets printed at failure</div></p>
+</p></div></div></body></html>

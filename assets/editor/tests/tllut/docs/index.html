@@ -1,0 +1,68 @@
+<head>
+<title> Reference | index</title>
+</head>
+<html>
+<script src="lunr.js"></script>
+<script src="searchprovider.js"></script>
+<script src="searchindex.js"></script>
+<script src="highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<body onload='processOnLoadSearch();'>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="stylesheet" type="text/css" href="syntax-style.css"/>
+<div class='function' id='searchresults'></div>
+<div class='sidepanel'>
+<form>
+<input type="text" name="searchedit" placeholder="Search...">
+<input type="button" name="" value="Search" onclick="submitSearch(this.form.searchedit.value); return false;">
+</form>
+<a class='filelink' href='tllut.lua.html'>tllut.lua</a><br>
+</div>
+<div id='content'>
+<div class='function'><h2>TLLUT is a small library for Lua unit testing<br></h2><p>
+
+
+=============================================<br>
+<br>
+Licensing<br>
+=========<br>
+<br>
+Copyright (c) 2015 Yannick Pflanzer<br>
+<br>
+<br>
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br>
+<br>
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br>
+<br>
+Example:<br>
+ <pre class='code'><code><br>
+local tllut = require("src.tllut")<br>
+<br>
+function sometest()<br>
+print("Running test!")<br>
+assertEquals("x", "x")<br>
+assertEquals(123, 321)<br>
+end<br>
+<br>
+function otherTest()<br>
+assertEquals(0,0)<br>
+assertEquals(true, false)<br>
+<br>
+assertArrayEquals({"Hello", "World"}, {"ROFL", "LOL"})<br>
+assertArrayEquals({0, 0}, {0, 0})<br>
+end<br>
+<br>
+function emptyTest()<br>
+<br>
+end<br>
+<br>
+tllut:addSuite({<br>
+["sometest"] = sometest,<br>
+["otherTest"] = otherTest,<br>
+["emptyTest"] = emptyTest<br>
+})<br>
+<br>
+tllut:runAll()<br>
+tllut:printResult()<br>
+</code></pre><br>
+</p></div></div></body></html>
