@@ -3,6 +3,7 @@ menu.selectedEntry = 1
 
 local creditsMenu = dofile("mcredits.lua")
 local loadGameMenu = dofile("mloadgame.lua")
+local playGameMenu = dofile("mgame.lua")
 
 local neo2d = NeoLua.Neo2DEngine.getInstance()
 
@@ -61,7 +62,7 @@ function menu:update(dt)
 end
 
 function MainMenuStartGame()
-
+  menu.menusystem:changeState(playGameMenu)
 end
 
 function MainMenuLoadGame()
