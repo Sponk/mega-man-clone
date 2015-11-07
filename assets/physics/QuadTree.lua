@@ -19,6 +19,18 @@ local root = nil
 local handles = {}
 local deadcells = {}
 
+local function clear()
+  -- some stats (optional)
+  nobjects = 0
+  nlivecells = 0
+  ndeadcells = 0
+  
+  -- internals
+  root = nil
+  handles = {}
+  deadcells = {}
+end
+
 -- create cell
 local function createC(p, q, x, y, s)
    -- get a cell from the pool
@@ -219,7 +231,7 @@ local function removeO(object)
 		 break
 	  end
    end
-   trimBottom(c)
+   trimBottom(c)   
 end
 
 -- insert new object
@@ -355,7 +367,11 @@ local function getR(object)
    return c.x, c.y, c.s, c.s
 end
 
-quad = {}
+local quad = {}
+
+function quad.getObjectsCount()
+  return nobjects
+end
 
 quad.insert = insertO
 quad.remove = removeO
@@ -363,5 +379,6 @@ quad.select = selectO
 quad.selectRange = selectR
 quad.trimTop = trimT
 quad.getRange = getR
+quad.clear = clear
 
 return quad

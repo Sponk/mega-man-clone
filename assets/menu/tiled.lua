@@ -74,10 +74,13 @@ end
 
 --- Loads a Lua file exported by the Tiled 2D map editor
 -- and returns a table of Tiles containing all loaded tiles.
+-- 
+-- @param imagepath The directory the level file resides in relative to the NeoPlayer executable
 -- @param canvas The canvas that will display the tiles
 -- @param path The Lua file to load
-function TiledLevel:loadTiledFile(path, canvas)
-
+function TiledLevel:loadTiledFile(imagepath, path, canvas)
+   
+   local imagepath = string.match(imagepath, "(.-)([^\\/]-%.?([^%.\\/]*))$")
    --path = path:gsub("/", ".")
 
    -- FIXME: Deletes every ".lua", not just the file ending!
@@ -85,20 +88,61 @@ function TiledLevel:loadTiledFile(path, canvas)
 
    local tiledLevel = dofile(path)
    
+   infoLog("Found level version: " .. tiledLevel.version)
+      
    local resolution = NeoLua.system:getScreenSize()
    local tiledSpriteSheet = tiledLevel.tilesets[1]
+   local tilesets = {}
    
-   local spritesheetSize = { x = math.ceil(tiledSpriteSheet.imagewidth / tiledSpriteSheet.tilewidth), 
-                             y = math.ceil(tiledSpriteSheet.imageheight / tiledSpriteSheet.tileheight) }
+   local i = 1
+   for k,v in ipairs(tiledLevel.tilesets) do
+     
+      tilesets[i] = {
+        spritesheetSize = { x = math.floor(v.imagewidth / v.tilewidth), 
+                            y = math.floor(v.imageheight / v.tileheight) },
+                            
+        sheet = NeoLua.TileSheet(),
+        tileset = v        
+      }
+      
+      tilesets[i].sheet:loadImage(imagepath .. v.image, 
+                                  v.tilewidth, 
+                                  v.tileheight,
+                                  v.spacing)
+                               
+      infoLog("Loading sprite sheet: " .. v.image .. " width: " .. tilesets[i].spritesheetSize.x .. " height: " .. tilesets[i].spritesheetSize.y)
+         
+      i = i + 1
+    end
    
-   infoLog("Found level version: " .. tiledLevel.version)
-   infoLog("Loading sprite sheet: " .. tiledSpriteSheet.image)
-   local spriteSheet = NeoLua.TileSheet()
+   local function findTileset(gid)
    
-   spriteSheet:loadImage(tiledSpriteSheet.image, 
-      								   tiledSpriteSheet.tilewidth, 
-      								   tiledSpriteSheet.tileheight,
-      								   tiledSpriteSheet.spacing)
+    -- It does not matter since the tile is going to get ignored
+    if gid == 0 then
+      return tilesets[1]
+    end
+   
+    for k,v in ipairs(tilesets) do
+      if gid <= (v.tileset.firstgid + v.tileset.tilecount) then
+        --infoLog("Got gid = " .. gid .. " and firstgid = " .. v.tileset.firstgid)
+        return v
+      end
+      
+      prev = v
+    end
+    
+    return nil
+   end
+   
+   --local spritesheetSize = { x = math.ceil(tiledSpriteSheet.imagewidth / tiledSpriteSheet.tilewidth), 
+   --                          y = math.ceil(tiledSpriteSheet.imageheight / tiledSpriteSheet.tileheight) }
+   
+   --local spriteSheet = NeoLua.TileSheet()
+   
+   --spriteSheet:loadImage(tiledSpriteSheet.image, 
+   --   								   tiledSpriteSheet.tilewidth, 
+   --   								   tiledSpriteSheet.tileheight,
+   --   								   tiledSpriteSheet.spacing)
 
    for n,l in pairs(tiledLevel.layers) do
 	  local layer = TiledLayer(l.type)
@@ -116,6 +160,11 @@ function TiledLevel:loadTiledFile(path, canvas)
 			   x = 0
 			   y = y+1
 			end
+			
+			local sheet = findTileset(l.data[i])
+			local spritesheetSize = sheet.spritesheetSize
+			local tiledSpriteSheet = sheet.tileset
+			local spriteSheet = sheet.sheet
 			
 			tpos = self:getTilePosition(l.data[i] - tiledSpriteSheet.firstgid, spritesheetSize.x, spritesheetSize.y)
 			
@@ -145,13 +194,20 @@ function TiledLevel:loadTiledFile(path, canvas)
 	  elseif l.type == "objectgroup" then
 	  
 	    local spriteBatch = NeoLua.SpriteBatch()
-      canvas:addSpriteBatch(spriteBatch)
+      canvas:addSpriteBatch(spriteBatch) 
 	  
+	   infoLog("Loading objects")
 		 for n,o in pairs(l.objects) do	
 			
-			local tpos = self:getTilePosition(o.gid, tiledLevel.width, tiledLevel.height)
+			local sheet = findTileset(o.gid)
+      local spritesheetSize = sheet.spritesheetSize
+      local tiledSpriteSheet = sheet.tileset
+      local spriteSheet = sheet.sheet
+			local tpos = self:getTilePosition(o.gid - tiledSpriteSheet.firstgid, spritesheetSize.x, spritesheetSize.y)
 			
-			 local tile = NeoLua.Tile(o.x,o.y,o.width,o.height, o.name, tpos.x, tpos.y)
+			 local tile = NeoLua.Tile(o.x + o.width, o.y - o.height, o.width, o.height, o.name, tpos.x, tpos.y)
+			
+			 tile:rotate(180)
 			
 			 table.insert(layer.objects, tile)
 			 tile:setTileSheet(spriteSheet)

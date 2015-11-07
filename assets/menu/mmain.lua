@@ -32,6 +32,8 @@ function menu:init(menusystem)
   creditsButton:setScriptCallback("MainMenuCredits")
   exitGameButton:setScriptCallback("MainMenuExit")
   loadGameButton:setScriptCallback("MainMenuLoadGame")
+  
+  playGameMenu.mainmenu = menu
 end
 
 function menu:destroy()

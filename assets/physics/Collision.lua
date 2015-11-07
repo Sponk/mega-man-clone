@@ -149,7 +149,7 @@ local function checkCollision(a, b, dt)
 end
 
 -- Public functionality
-collision = {}
+local collision = {}
 
 -- updates the simulation
 function collision.update(dt)
@@ -310,6 +310,31 @@ end
 -- gets the number of collision checks for the last frame
 function collision.getCollisionCount()
    return nchecks
+end
+
+function collision.clear()
+  for k,v in ipairs(collision.statics) do
+    collision.removeShape(v)
+    collision.statics[k] = nil
+  end
+  
+  for k,v in ipairs(collision.dynamics) do
+    collision.removeShape(v)
+    collision.dynamics[k] = nil
+  end
+  
+  for k,v in ipairs(collision.kinematics) do
+    collision.removeShape(v)
+    collision.kinematics[k] = nil    
+  end
+  
+  nchecks = 0
+  quad.clear()
+end
+
+function collision.printStats()
+  infoLog("Number of Collisions: " .. nchecks)
+  infoLog("Quadtree: " .. quad.getObjectsCount())
 end
 
 -- Public access to some tables
