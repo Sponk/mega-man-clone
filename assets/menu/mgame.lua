@@ -2,6 +2,9 @@ local state = {}
 local neo2d = NeoLua.Neo2DEngine.getInstance()
 local Tiled = dofile("tiled.lua")
 local Collision = dofile("../physics/Collision.lua")
+local Items = dofile("../items/items.lua")
+
+dofile("../waypoint/waypoint.lua")
 
 local gameoverScreen = dofile("mgameover.lua")
 
@@ -15,6 +18,7 @@ state.playerAnimations.frame = 0
 
 state.persistent = {
     lives = 0,
+    levelId = 1,
     currentlevel = "levels/level1.lua"
 }
 
@@ -39,38 +43,11 @@ local function isColliding(x1, y1, w1, h1, x2, y2, w2, h2)
          y2 < y1+h1
 end
 
-local function collisionDirection(x1, y1, w1, h1, x2, y2, w2, h2)
-
-end
-
-local function isCollidingWithLevel(player, level, playerOffset)
-  -- printTable(level)
-  local pos = player:getPosition()
-  local size = player:getSize()
-  
-  --[[for k,v in ipairs(level.objects) do
-    -- TODO: Culling!
-    local levelPos = v:getPosition()
-    local levelSize = v:getSize()
-    
-    if isColliding(pos.x, pos.y, size.x, size.y, levelPos.x, levelPos.y, levelSize.x, levelSize.y) then
-      infoLog("TRUE")
-      return true
-    end
-  end]]
-  
-  for i = 1, #level.objects, 1 do
-    -- TODO: Culling!
-    local v = level.objects[i]
-    local levelPos = v:getPosition()
-    local levelSize = v:getSize()
-    
-    if isColliding(pos.x, pos.y, size.x, size.y, levelPos.x, levelPos.y, levelSize.x, levelSize.y) then
-      return true, v
-    end
+--- Finds an entry of the given table that has the name attribute set to the given name.
+function findShape(l, n)
+  for k,v in ipairs(l) do
+    if v.name == n then return v end
   end
-  
-  return false
 end
 
 function state:init(menusystem)
@@ -78,6 +55,9 @@ function state:init(menusystem)
   state.playerAnimations.current = state.playerAnimations.standing
   state.player = {}
   state.player.velocity = NeoLua.Vector2()
+  
+  -- Contains all objects that follow a polyline
+  state.platforms = {}
   
   if state.persistent.lives == 0 then
     state.persistent.lives = 5
@@ -156,7 +136,13 @@ function state:init(menusystem)
   state.player.shape = Collision.addDynamic("circle", 'player', playerpos.x, playerpos.y, playersize.x*0.5, playersize.y*0.5)
   function state.player.shape:onCollide(b, nx, ny)
   
-    if b.tag == "level" and ny < -0.5 then
+    local item = Items[b.tag]
+    
+    if item ~= nil then
+      item:onCollision(b.sprite, state)
+    end   
+    
+    if (b.tag == "level" or b.type == "platform") and ny < -0.5 then
       state.player.collision = true
     end
     
@@ -189,15 +175,31 @@ function state:init(menusystem)
   
   -- Trigger objects
   for k,v in ipairs(state.tiles.layers[4].objects) do
-    local pos = v:getPosition()
-    local size = v:getSize()   
-    local shape = Collision.addStatic("rect", v:getLabel(), pos.x - size.y * 0.5, pos.y - size.y * 0.5, size.x * 0.5, size.y * 0.5)
+    local tile = v.tile
+    local pos = tile:getPosition()
+    local size = tile:getSize()
+    local shapeType = Collision.addStatic
     
-    v:setLabel("")
+    if v.properties["Path"] ~= nil or v.properties["Dynamic"] == "true" then
+      shapeType = Collision.addDynamic
+    end
+        
+    local shape = shapeType("rect", tile:getLabel(), pos.x - size.y * 0.5, pos.y - size.y * 0.5, size.x * 0.5, size.y * 0.5)
+    shape.gravity = 0
+    shape.colliding = (v.properties["Colliding"] == "true") or false
+    shape.type = v.type
+    
+    shape.sprite = v
+    tile:setLabel("")
+    
+    if v.properties["Path"] ~= nil then
+      local polyline = findShape(state.tiles.layers[4].shapes, v.properties["Path"])
+      table.insert(state.platforms, WayInterpolator(polyline.x, polyline.y, tile, shape, polyline.polyline))
+    end
     
     function shape:onCollide(b)    
-      --infoLog("Object Collision: " .. b.tag)
-      return false
+      --infoLog("Object Collision: " .. b.tag .. " " .. tostring(self.colliding))
+      return self.colliding
     end
      
     table.insert(state.level.physics, shape)
@@ -230,7 +232,7 @@ function state:cullTiles(scale)
   local res = NeoLua.system:getScreenSize() / scale
   
   local m, v, pos, size
-  for j = 1, #self.tiles.layers, 1 do
+  for j = 1, #self.tiles.layers-1, 1 do
     local obj = self.tiles.layers[j].objects
     for i = 1, #obj, 1 do
       local v = obj[i]
@@ -301,16 +303,17 @@ function state:update(dt)
   local res = NeoLua.system:getScreenSize()
   local offset = (self.playertile:getPosition() + self.camera)
   local scale = math.min(res.x/state.realWidth, res.y/state.realHeight)
+  local scaled = res / scale
   
-  if offset.x > 0.75*self.realWidth then
+  if offset.x > 0.75*scaled.x then
     self.camera.x = math.floor(self.camera.x - 100 * dt)
-  elseif offset.x < 0.25*self.realWidth then
+  elseif offset.x < 0.25*scaled.x then
     self.camera.x = math.floor(self.camera.x + 130 * dt)
   end
   
-  if offset.y > 0.75*self.realHeight then
+  if offset.y > 0.75*scaled.y then
     self.camera.y = math.floor(self.camera.y - 100 * dt)
-  elseif offset.y < 0.25*self.realHeight then
+  elseif offset.y < 0.25*scaled.y then
     self.camera.y = math.floor(self.camera.y + 100 * dt)
   end
   
@@ -326,6 +329,11 @@ function state:update(dt)
       v:setVisible(false)
     end
   end
+    
+  -- Update platforms
+  for k,v in ipairs(self.platforms) do
+    v:update(dt)
+  end 
     
   self:cullTiles(scale)
   scriptProfiler = NeoLua.system:getSystemTick() - scriptProfiler
@@ -345,8 +353,7 @@ function state:update(dt)
     else
       -- Restart the level
       self.menusystem:changeState(self)
-    end
-    
+    end    
     return
   end
   

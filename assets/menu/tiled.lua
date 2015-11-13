@@ -9,6 +9,7 @@ TiledLayer = class(
    function(obj, t)
 	  obj.type = t
 	  obj.objects = {}
+	  obj.shapes =  {}
    end
 )
 
@@ -17,6 +18,16 @@ TiledLevel = class(
 	  obj.path = ""
 	  obj.layers = {}
    end
+)
+
+TiledObject = class(
+  function(obj, name, tag, type, properties, tile)
+    obj.name = name
+    obj.tag = tag
+    obj.properties = properties
+    obj.tile = tile
+    obj.type = type
+  end
 )
 
 local FLIPPED_HORIZONTALLY_FLAG = 0x80000000
@@ -199,20 +210,24 @@ function TiledLevel:loadTiledFile(imagepath, path, canvas)
 	   infoLog("Loading objects")
 		 for n,o in pairs(l.objects) do	
 			
-			local sheet = findTileset(o.gid)
-      local spritesheetSize = sheet.spritesheetSize
-      local tiledSpriteSheet = sheet.tileset
-      local spriteSheet = sheet.sheet
-			local tpos = self:getTilePosition(o.gid - tiledSpriteSheet.firstgid, spritesheetSize.x, spritesheetSize.y)
-			
-			 local tile = NeoLua.Tile(o.x + o.width, o.y - o.height, o.width, o.height, o.name, tpos.x, tpos.y)
-			
-			 tile:rotate(180)
-			
-			 table.insert(layer.objects, tile)
-			 tile:setTileSheet(spriteSheet)
-			
-			 spriteBatch:addSprite(tile)
+			if o.shape == "polyline" then
+       table.insert(layer.shapes, o)
+			 infoLog("Found polyline. Will ignore it!");
+			else			
+  			local sheet = findTileset(o.gid)
+        local spritesheetSize = sheet.spritesheetSize
+        local tiledSpriteSheet = sheet.tileset
+        local spriteSheet = sheet.sheet
+  			local tpos = self:getTilePosition(o.gid - tiledSpriteSheet.firstgid, spritesheetSize.x, spritesheetSize.y)
+  			
+  			 local tile = NeoLua.Tile(o.x + o.width, o.y - o.height, o.width, o.height, o.name, tpos.x, tpos.y)
+  			
+  			 tile:rotate(180 + o.rotation)
+  			
+  			 table.insert(layer.objects, TiledObject(o.name, o.tag, o.type, o.properties, tile))
+  			 tile:setTileSheet(spriteSheet)  			
+  			 spriteBatch:addSprite(tile)
+			 end	 
 		 end
 	  end
    end

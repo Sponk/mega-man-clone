@@ -163,16 +163,19 @@ function collision.update(dt)
    local xg = gravityx*dt
    local yg = gravityy*dt
    local mv2 = maxVelocity*maxVelocity
+   
    for i = 1, #dynamics do
 	  local d = dynamics[i]
 	  -- damping
 	  local c = 1 + d.damping*dt
 	  local xv = d.xv/c
 	  local yv = d.yv/c
+	  
 	  -- gravity
 	  local g = d.gravity or 1
 	  xv = xv + xg*g
 	  yv = yv + yg*g
+	  
 	  -- threshold
 	  local v2 = xv*xv + yv*yv
 	  if v2 > mv2 then
@@ -192,28 +195,32 @@ function collision.update(dt)
 	  local k = kinematics[i]
 	  changePosition(k, k.xv*dt, k.yv*dt)
    end
+   
    -- move dynamic shapes
    if partition == 'quad' then
 	  -- quadtree partitioning
 	  for i = 1, #dynamics do
 		 local d = dynamics[i]
-		 -- move to new position
-		 changePosition(d, d.xv*dt, d.yv*dt)
-		 -- check and resolve collisions
-		 -- query for potentially colliding shapes
-		 --qselect(d, buffer)
-		 local x, y, hw, hh = getBounds(d)
-		 qselectR(x, y, hw, hh, buffer)
-		 -- note: we check each collision pair twice
-		 for j = #buffer, 1, -1 do
-			local d2 = buffer[j]
-			if d2 ~= d then
-			   checkCollision(d, d2, dt)
-			end
-			-- clear the buffer during iteration
-			buffer[j] = nil
-		 end
-	  end
+		 
+		 if d then		 
+  		 -- move to new position
+  		 changePosition(d, d.xv*dt, d.yv*dt)
+  		 -- check and resolve collisions
+  		 -- query for potentially colliding shapes
+  		 --qselect(d, buffer)
+  		 local x, y, hw, hh = getBounds(d)
+  		 qselectR(x, y, hw, hh, buffer)
+  		 -- note: we check each collision pair twice
+  		 for j = #buffer, 1, -1 do
+  			local d2 = buffer[j]
+  			if d2 ~= d then
+  			   checkCollision(d, d2, dt)
+  			end
+  			-- clear the buffer during iteration
+  			buffer[j] = nil
+  		 end
+  	  end
+     end
    end
 end
 
@@ -235,7 +242,7 @@ function collision.addStatic(shape,tag, ...)
 end
 
 -- dynamic shapes are affected by gravity and collisions
-function collision.addDynamic(shape,tag, ...)
+function collision.addDynamic(shape, tag, ...)
    local s = addShapeType(dynamics, shape, ...)
    s.friction = 1
    s.bounce = 0
