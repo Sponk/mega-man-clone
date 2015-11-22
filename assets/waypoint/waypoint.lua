@@ -24,25 +24,25 @@ WayInterpolator = class(
         
         self.tile:setPosition(NeoLua.Vector2(self.shape.x, self.shape.y))
         
-        --infoLog("Moving object: From x " .. self.shape.x .. " y " .. self.shape.y .. " to x " .. p.x + self.x .. " y " .. p.y + self.y)
+        -- infoLog("Moving object: From x " .. self.shape.x .. " y " .. self.shape.y .. " to x " .. p.x + self.x .. " y " .. p.y + self.y)
         
         -- If we reached the waypoint continue with the next one!
-        if pos.x < target.x + self.threshold and pos.x > target.x - self.threshold
-          and pos.y < target.y + self.threshold and pos.y > target.y - self.threshold then
+        if (pos.x < target.x + self.threshold and pos.x > target.x - self.threshold)
+          and (pos.y < target.y + self.threshold and pos.y > target.y - self.threshold) then
           
           self.current = (self.current + 1)
-          if self.current >= #self.waypath then
+          if self.current > #self.waypath then
             self.current = 1
           end
-          --infoLog("Next point: " .. self.current);
+          -- infoLog("Next point: " .. self.current);
         end        
       end
     else
       obj.update = interpolation
     end
   
-    obj.speed = 100
-    obj.threshold = obj.speed * 0.2
+    obj.speed = physshape.speed
+    obj.threshold = obj.speed * 0.4
     obj.x = x
     obj.y = y
     obj.tile = tile

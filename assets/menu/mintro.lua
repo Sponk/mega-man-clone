@@ -11,7 +11,7 @@ function menu:init(menusystem)
   menu.menusystem = menusystem
   
   local canvas = NeoLua.Canvas()
-  neo2d:addCanvas(canvas)  
+  neo2d:addCanvas(canvas)
 end
 
 function menu:update(dt)

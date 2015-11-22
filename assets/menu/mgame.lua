@@ -3,6 +3,11 @@ local neo2d = NeoLua.Neo2DEngine.getInstance()
 local Tiled = dofile("tiled.lua")
 local Collision = dofile("../physics/Collision.lua")
 local Items = dofile("../items/items.lua")
+local Weapons = dofile("../weapons/weapons.lua")
+local Enemies = dofile("../enemies/enemies.lua")
+
+local PlasmaWeapon = dofile("../weapons/plasma.lua")
+Weapons.addWeapon("plasma", PlasmaWeapon)
 
 dofile("../waypoint/waypoint.lua")
 
@@ -134,13 +139,18 @@ function state:init(menusystem)
   
   -- The player
   state.player.shape = Collision.addDynamic("circle", 'player', playerpos.x, playerpos.y, playersize.x*0.5, playersize.y*0.5)
+  state.player.shape.direction = 1
   function state.player.shape:onCollide(b, nx, ny)
   
     local item = Items[b.tag]
     
     if item ~= nil then
-      item:onCollision(b.sprite, state)
+      item:onPlayerCollision(b.sprite, state)
     end   
+    
+    --if b.type == "platform" then
+    --  state.player.shape.gravity = 0
+    --end
     
     if (b.tag == "level" or b.type == "platform") and ny < -0.5 then
       state.player.collision = true
@@ -173,6 +183,7 @@ function state:init(menusystem)
     table.insert(state.level.physics, shape)
   end
   
+  state.level.items = {}
   -- Trigger objects
   for k,v in ipairs(state.tiles.layers[4].objects) do
     local tile = v.tile
@@ -185,11 +196,12 @@ function state:init(menusystem)
     end
         
     local shape = shapeType("rect", tile:getLabel(), pos.x - size.y * 0.5, pos.y - size.y * 0.5, size.x * 0.5, size.y * 0.5)
-    shape.gravity = 0
+    shape.gravity = v.properties["Gravity"] or 0
     shape.colliding = (v.properties["Colliding"] == "true") or false
     shape.type = v.type
-    
-    shape.sprite = v
+    shape.speed = v.properties["Speed"] or 100
+        
+    shape.sprite = tile
     tile:setLabel("")
     
     if v.properties["Path"] ~= nil then
@@ -197,13 +209,33 @@ function state:init(menusystem)
       table.insert(state.platforms, WayInterpolator(polyline.x, polyline.y, tile, shape, polyline.polyline))
     end
     
-    function shape:onCollide(b)    
-      --infoLog("Object Collision: " .. b.tag .. " " .. tostring(self.colliding))
-      return self.colliding
+    local item = Items[shape.tag]
+    
+    if item ~= nil then
+      if item.onCollide ~= nil then
+        shape.onCollide = Items[shape.tag].onCollide
+      end
+    
+      if item.update ~= nil then
+        shape.update = item.update    
+      end
+      
+      if item.setUp ~= nil then
+        item:setUp(shape)
+      end      
+    else    
+      function shape:onCollide(b)    
+        --infoLog("Object Collision: " .. b.tag .. " " .. tostring(self.colliding))
+        return self.colliding
+      end
     end
      
     table.insert(state.level.physics, shape)
+    table.insert(state.level.items, shape)
   end
+  
+  -- Load weapons
+  PlasmaWeapon:load(Collision, state.player.shape)
   
   Collision.printStats()
   Collision.setGravity(0, 1000)
@@ -250,6 +282,8 @@ end
 
 function state:update(dt)
 
+  self.dt = dt
+
   if self.gameover then
   
     if NeoLua.input:onKeyDown("SPACE") or NeoLua.input:onKeyDown("JOY1_BUTTON_START") then
@@ -268,6 +302,7 @@ function state:update(dt)
       
     self.playertile:setFlip(NeoLua.Vector2(0, 180))
     --self.playertile:translate(NeoLua.Vector2(math.floor(80*dt), 0))
+    self.player.shape.direction = 1
     self.player.shape.xv = 120
     self.playerAnimations.current = self.playerAnimations.running
     
@@ -276,6 +311,7 @@ function state:update(dt)
       self.playertile:setFlip(NeoLua.Vector2(0, 0))
       --self.playertile:translate(NeoLua.Vector2(-math.floor(80*dt), 0))
       self.player.shape.xv = -120
+      self.player.shape.direction = 0
       self.playerAnimations.current = self.playerAnimations.running
   else
       self.playerAnimations.time = self.playerAnimations.standing.delay
@@ -296,7 +332,7 @@ function state:update(dt)
   -- Reset collision flag. Will be set to true when the
   -- collision callback is executed in Collision.update somewhere
   state.player.collision = false
-      
+  
   Collision.update(dt)
   self.playertile:setPosition(NeoLua.Vector2(math.floor(self.player.shape.x), math.floor(self.player.shape.y)))
   
@@ -334,7 +370,21 @@ function state:update(dt)
   for k,v in ipairs(self.platforms) do
     v:update(dt)
   end 
-    
+  
+  -- Update weapons and bullets
+  Weapons.update(dt, scale, self.camera)
+  
+  -- Update items
+  for i = 1, #self.level.items, 1 do
+    local item = self.level.items[i]
+    if item.update then
+      item:update(dt, self)
+    end
+  end
+  
+  -- Update enemies
+  Enemies:update(dt, Collision)
+  
   self:cullTiles(scale)
   scriptProfiler = NeoLua.system:getSystemTick() - scriptProfiler
   
@@ -356,12 +406,40 @@ function state:update(dt)
     end    
     return
   end
-  
-  --print("Framerate: dt = " .. dt * 1000 .. "ms fps: " .. 1/dt .. " script performance: " .. scriptProfiler .. "ms fps: " .. 1/(scriptProfiler*0.001) .. " Number of collision checks: " .. Collision.getCollisionCount())
+
+  -- print("Framerate: dt = " .. dt * 1000 .. "ms fps: " .. 1/dt .. " script performance: " .. scriptProfiler .. "ms fps: " .. 1/(scriptProfiler*0.001) .. " Number of collision checks: " .. Collision.getCollisionCount())
 end
 
 function state:applyDamage(amount)
-  self.player.health = math.max(0, self.player.health - amount)
+  self.player.health = math.max(0, self.player.health - amount * self.dt)
+end
+
+function state:removeItem(shape)
+  
+  -- printTable(shape)
+  Collision.removeShape(shape)
+  
+  for i = 1, #self.level.items, 1 do
+    if self.level.items[i] == shape then
+      table.remove(self.level.items, i)
+      i = #self.level.items + 1
+    end
+  end
+  
+  for i = 1, #self.level.physics, 1 do
+    if self.level.physics[i] == shape then
+      table.remove(self.level.physics, i)
+      i = #self.level.physics + 1
+    end
+  end
+  
+  for i = 1, #self.platforms, 1 do
+    if self.platforms[i].shape == shape then
+      table.remove(self.platforms, i)
+    end
+  end 
+  
+  shape.sprite:setVisible(false)
 end
 
 function state:destroy()

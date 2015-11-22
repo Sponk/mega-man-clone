@@ -212,7 +212,7 @@ function TiledLevel:loadTiledFile(imagepath, path, canvas)
 			
 			if o.shape == "polyline" then
        table.insert(layer.shapes, o)
-			 infoLog("Found polyline. Will ignore it!");
+			 infoLog("Found polyline.");
 			else			
   			local sheet = findTileset(o.gid)
         local spritesheetSize = sheet.spritesheetSize

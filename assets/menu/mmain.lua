@@ -8,6 +8,12 @@ local playGameMenu = dofile("mgame.lua")
 local neo2d = NeoLua.Neo2DEngine.getInstance()
 
 function menu:init(menusystem)
+
+  -- Play main menu music
+  Music:load("assets/music/SubSidised.ogg", "Intro", true, "Music")
+  Music:play("Intro")
+  Music:setVolume("Music", 1)
+    
   local canvas = NeoLua.Canvas()
   
   -- menu.canvasId = neo2d:getNumCanvase()

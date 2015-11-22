@@ -2,5 +2,6 @@
 -- The item name is used as the key.
 
 return {
-  ["FinishItem"] = dofile("FinishItem.lua")
+  ["FinishItem"] = dofile("FinishItem.lua"),
+  ["WalkerEnemy"] = dofile("WalkerEnemy.lua")
 }
